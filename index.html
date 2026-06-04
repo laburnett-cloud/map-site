@@ -1,15 +1,15 @@
-<body>
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
+
 <head>
 
 <meta charset="utf-8">
 
-<title>Locations</title>
+<title>ICE Sighting Map</title>
 
 <link
- rel="stylesheet"
- href="https://unpkg.com/leaflet/dist/leaflet.css"
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 />
 
 <style>
@@ -17,61 +17,108 @@
 html,
 body,
 #map {
-  height:100%;
-  width:100%;
-  margin:0;
+
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+
 }
 
 </style>
 
 </head>
+
 <body>
 
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-const map = L.map('map')
-.setView([42.36,-71.10],10);
+const map = L.map("map").setView(
+  [42.35, -71.55],
+  8
+);
 
 L.tileLayer(
-'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-{
-  maxZoom:19
-}
+  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    maxZoom: 19
+  }
 ).addTo(map);
 
-fetch("https://script.google.com/macros/s/AKfycbyuOjBsz3l-rpR9l5viWldeOmZkMcOvvIe1rj-EJ8IMpdH1-bkGaNiIQJgnHutuzySfWw/exec")
-.then(r => r.json())
+fetch(
+
+  "https://script.google.com/macros/s/REPLACE_WITH_NEW_DEPLOYMENT_ID/exec?t="
+
+  + Date.now()
+
+)
+
+.then(response => response.json())
+
 .then(data => {
 
-  const layer =
-    L.geoJSON(data, {
+  console.log(data);
+
+  const markers = L.geoJSON(
+    data,
+
+    {
 
       onEachFeature:
       function(feature, layer) {
 
         const popup =
 
-          layer.bindPopup(
-  "<b>" + feature.properties.name + "</b><br>" +
-  feature.properties.address + "<br><br>" +
-  feature.properties.description
-);
+          "<b>" +
 
-        layer.bindPopup(popup);
+          feature.properties.title +
+
+          "</b><br><br>" +
+
+          feature.properties.address +
+
+          "<br><br>" +
+
+          feature.properties.description;
+
+        layer.bindPopup(
+          popup
+        );
 
       }
 
-    });
+    }
 
-  layer.addTo(map);
+  );
+
+  markers.addTo(map);
+
+  if (
+    markers.getLayers().length > 0
+  ) {
+
+    map.fitBounds(
+      markers.getBounds()
+    );
+
+  }
+
+})
+
+.catch(error => {
+
+  console.error(
+    error
+  );
 
 });
 
 </script>
 
 </body>
+
 </html>
