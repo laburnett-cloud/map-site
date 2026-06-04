@@ -43,7 +43,7 @@ L.tileLayer(
 }
 ).addTo(map);
 
-fetch("https://script.google.com/macros/s/AKfycbzYm-wqJuIBaw44tityaLUOARImTd55uF27gFa9IzDVsjUPc15Paess0JtRYIMBNM3xNw/exec")
+fetch("https://script.google.com/macros/s/AKfycbyuOjBsz3l-rpR9l5viWldeOmZkMcOvvIe1rj-EJ8IMpdH1-bkGaNiIQJgnHutuzySfWw/exec")
 .then(r => r.json())
 .then(data => {
 
@@ -55,11 +55,11 @@ fetch("https://script.google.com/macros/s/AKfycbzYm-wqJuIBaw44tityaLUOARImTd55uF
 
         const popup =
 
-          '<b>' +
-          feature.properties.name +
-          '</b><br>' +
-
-          feature.properties.address;
+          layer.bindPopup(
+  "<b>" + feature.properties.name + "</b><br>" +
+  feature.properties.address + "<br><br>" +
+  feature.properties.description
+);
 
         layer.bindPopup(popup);
 
