@@ -62,7 +62,9 @@ fetch(
 .then(data => {
 
   console.log(data);
-
+  console.log(
+  JSON.stringify(data, null, 2)
+);
   const markers = L.geoJSON(
     data,
 
