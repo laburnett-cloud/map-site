@@ -65,32 +65,32 @@ fetch(
   console.log(
   JSON.stringify(data, null, 2)
 );
-  const markers = L.geoJSON(
-    data,
+ const markers = L.geoJSON(data, {
+  pointToLayer: function (feature, latlng) {
 
-    {
+    const hasDesc = feature.properties.hasDescription;
 
-      onEachFeature:
-      function(feature, layer) {
+    const color = hasDesc ? "green" : "red";
 
-        const popup =
+    return L.circleMarker(latlng, {
+      radius: 6,
+      fillColor: color,
+      color: color,
+      weight: 1,
+      fillOpacity: 0.9
+    });
+  },
 
-          "<b>" +
+  onEachFeature: function (feature, layer) {
 
-          feature.properties.title +
+    const popup =
+      "<b>" + feature.properties.title + "</b><br><br>" +
+      feature.properties.address + "<br><br>" +
+      feature.properties.description;
 
-          "</b><br><br>" +
-
-          feature.properties.address +
-
-          "<br><br>" +
-
-          feature.properties.description;
-
-        layer.bindPopup(
-          popup
-        );
-
+    layer.bindPopup(popup);
+  }
+});
       }
 
     }
