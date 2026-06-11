@@ -2,33 +2,28 @@
 <html>
 
 <head>
-
 <meta charset="utf-8">
-
 <title>ICE Sighting Map</title>
 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet.heat/dist/leaflet-heat.css">
-<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.heat/dist/leaflet-heat.css"/>
 
 <style>
-
-html,
-body,
-#map {
-
+html, body, #map {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-
 }
 
+.toggle-button button {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 13px;
+}
 </style>
-
 </head>
 
 <body>
@@ -36,183 +31,172 @@ body,
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
 
-const map = L.map("map").setView(
-  [42.35, -71.55],
-  8
-);
+const map = L.map("map").setView([42.35, -71.55], 8);
 
-L.tileLayer(
-  "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    maxZoom: 19
-  }
-).addTo(map);
-
-fetch(
-
-  "https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5oItxf7TwSC81r-m_c3WwpAhkVMkXFmMhq4Sg/exec?t="
-
-  + Date.now()
-
-)
-
-.then(response => response.json())
-
-.then(data => {
-  console.log("FEATURE COUNT:", data.features.length);
-  console.log("FIRST FEATURE:", data.features[0]);
-  console.log(data);
-  console.log(
-  JSON.stringify(data, null, 2)
-);
-function getAgeDays(timestamp) {
-  const now = new Date();
-  const t = new Date(timestamp);
-  return (now - t) / (1000 * 60 * 60 * 24);
-}
-
-function getOpacity(age) {
-  if (age <= 2) return 1;
-  if (age >= 14) return 0;
-  return 1 - ((age - 2) / 12);
-}
-
-const markerLayer = L.geoJSON(data, {
-
-  pointToLayer: function (feature, latlng) {
-
-    const age = getAgeDays(feature.properties.timestamp);
-
-    const isCluster = feature.properties.isCluster;
-
-    const hasDesc =
-      feature.properties.description &&
-      feature.properties.description.trim() !== "";
-
-    let color = "red";
-
-    if (isCluster) {
-      color = "green";
-    } else if (hasDesc) {
-      color = "green";
-    }
-
-    const opacity = getOpacity(age);
-
-    return L.circleMarker(latlng, {
-
-      radius: isCluster ? 9 : 6,
-
-      fillColor: color,
-      color: color,
-
-      weight: 1,
-
-      fillOpacity: opacity,
-      opacity: opacity
-
-    });
-  const heatData = data.features.map(f => {
-
-  const age = getAgeDays(f.properties.timestamp);
-
-  // weight: newer = stronger heat
-  const weight =
-    age <= 2 ? 1 :
-    age >= 14 ? 0.1 :
-    1 - (age / 14);
-
-  return [
-    f.geometry.coordinates[1], // lat
-    f.geometry.coordinates[0], // lng
-    weight
-  ];
-});
-
-const heatLayer = L.heatLayer(heatData, {
-  radius: 25,
-  blur: 18,
-  maxZoom: 17
-});
-  },
-
-  onEachFeature: function (feature, layer) {
-  markerLayer.addTo(map);
-let currentLayer = markerLayer;
-    const age = Math.floor(getAgeDays(feature.properties.timestamp));
-
-    layer.bindPopup(
-      "<b>" + feature.properties.title + "</b><br><br>" +
-      feature.properties.address + "<br><br>" +
-      feature.properties.description + "<br><br>" +
-      "<small>" + age + " days old</small>"
-    );
-  }
-
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19
 }).addTo(map);
 
-  if (
-    markerLayer.getLayers().length > 0
-  ) {
+fetch("YOUR_SCRIPT_URL_HERE?t=" + Date.now())
+.then(res => res.json())
+.then(data => {
 
-    map.fitBounds(
-      markers.getBounds()
-    );
+  console.log("DATA:", data);
 
+  // -------------------------
+  // TIME FUNCTIONS
+  // -------------------------
+  function getAgeDays(timestamp) {
+    const now = new Date();
+    const t = new Date(timestamp);
+    return (now - t) / (1000 * 60 * 60 * 24);
+  }
+
+  function getOpacity(age) {
+    if (age <= 2) return 1;
+    if (age >= 14) return 0;
+    return 1 - ((age - 2) / 12);
+  }
+
+  // -------------------------
+  // MARKERS LAYER
+  // -------------------------
+  const markerLayer = L.geoJSON(data, {
+
+    pointToLayer: function (feature, latlng) {
+
+      const age = getAgeDays(feature.properties.timestamp);
+      const isCluster = feature.properties.isCluster;
+
+      const hasDesc =
+        feature.properties.description &&
+        feature.properties.description.trim() !== "";
+
+      let color = "red";
+
+      if (isCluster || hasDesc) {
+        color = "green";
+      }
+
+      const opacity = getOpacity(age);
+
+      return L.circleMarker(latlng, {
+
+        radius: isCluster ? 9 : 6,
+
+        fillColor: color,
+        color: color,
+
+        weight: 1,
+
+        fillOpacity: opacity,
+        opacity: opacity
+      });
+    },
+
+    onEachFeature: function (feature, layer) {
+
+      const age = Math.floor(getAgeDays(feature.properties.timestamp));
+
+      layer.bindPopup(
+        "<b>" + feature.properties.title + "</b><br><br>" +
+        feature.properties.address + "<br><br>" +
+        feature.properties.description + "<br><br>" +
+        "<small>" + age + " days old</small>"
+      );
+    }
+
+  }).addTo(map);
+
+  // -------------------------
+  // HEATMAP LAYER
+  // -------------------------
+  const heatData = data.features.map(f => {
+
+    const age = getAgeDays(f.properties.timestamp);
+
+    const weight =
+      age <= 2 ? 1 :
+      age >= 14 ? 0.1 :
+      1 - (age / 14);
+
+    return [
+      f.geometry.coordinates[1],
+      f.geometry.coordinates[0],
+      weight
+    ];
+  });
+
+  const heatLayer = L.heatLayer(heatData, {
+    radius: 25,
+    blur: 18,
+    maxZoom: 17
+  });
+
+  // -------------------------
+  // TOGGLE STATE
+  // -------------------------
+  let heatOn = false;
+
+  // -------------------------
+  // BUTTON CONTROL
+  // -------------------------
+  const toggleButton = L.control({ position: "topright" });
+
+  toggleButton.onAdd = function () {
+
+    const div = L.DomUtil.create("div", "toggle-button");
+
+    div.innerHTML = `
+      <button id="toggleMap">Switch to Heatmap</button>
+    `;
+
+    return div;
+  };
+
+  toggleButton.addTo(map);
+
+  // must wait for DOM button to exist
+  setTimeout(() => {
+
+    document.getElementById("toggleMap").onclick = function () {
+
+      if (!heatOn) {
+
+        map.removeLayer(markerLayer);
+        heatLayer.addTo(map);
+
+        this.innerText = "Switch to Markers";
+
+      } else {
+
+        map.removeLayer(heatLayer);
+        markerLayer.addTo(map);
+
+        this.innerText = "Switch to Heatmap";
+
+      }
+
+      heatOn = !heatOn;
+    };
+
+  }, 0);
+
+  // -------------------------
+  // FIT BOUNDS
+  // -------------------------
+  if (markerLayer.getLayers().length > 0) {
+    map.fitBounds(markerLayer.getBounds());
   }
 
 })
+.catch(err => console.error(err));
 
-.catch(error => {
-
-  console.error(
-    error
-  );
-
-});
-const toggleButton = L.control({ position: "topright" });
-
-toggleButton.onAdd = function () {
-
-  const div = L.DomUtil.create("div", "toggle-button");
-
-  div.innerHTML = `
-    <button id="toggleMap">
-      Switch to Heatmap
-    </button>
-  `;
-
-  return div;
-};
-
-toggleButton.addTo(map);
-  let heatOn = false;
-
-document.getElementById("toggleMap").onclick = function () {
-
-  if (!heatOn) {
-
-    map.removeLayer(markerLayer);
-    heatLayer.addTo(map);
-
-    this.innerText = "Switch to Markers";
-
-  } else {
-
-    map.removeLayer(heatLayer);
-    markerLayer.addTo(map);
-
-    this.innerText = "Switch to Heatmap";
-
-  }
-
-  heatOn = !heatOn;
-};
 </script>
 
 </body>
-
 </html>
