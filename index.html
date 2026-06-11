@@ -119,8 +119,14 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
   // HEATMAP LAYER
   // -------------------------
 console.log("HEAT FEATURES:", data.features.length);
+console.log(
+  "SAMPLE HEAT INPUT:",
+  data.features.slice(0, 3).map(f => f.geometry)
+);
 
-console.log("SAMPLE HEAT INPUT:", data.features.slice(0, 3).map(f => f.geometry));
+// -------------------------
+// HEATMAP DATA
+// -------------------------
 const heatData = data.features
   .map(f => {
 
@@ -146,59 +152,70 @@ const heatData = data.features
   })
   .filter(p => p !== null);
 
-  // -------------------------
-  // TOGGLE STATE
-  // -------------------------
-  let heatOn = false;
+// -------------------------
+// HEAT LAYER
+// -------------------------
+const heatLayer = L.heatLayer(heatData, {
+  radius: 25,
+  blur: 18,
+  maxZoom: 17
+});
 
-  // -------------------------
-  // BUTTON CONTROL
-  // -------------------------
-  const toggleButton = L.control({ position: "topright" });
+// -------------------------
+// TOGGLE STATE
+// -------------------------
+let heatOn = false;
 
-  toggleButton.onAdd = function () {
+// -------------------------
+// BUTTON
+// -------------------------
+const toggleButton = L.control({ position: "topright" });
 
-    const div = L.DomUtil.create("div", "toggle-button");
+toggleButton.onAdd = function () {
 
-    div.innerHTML = `
-      <button id="toggleMap">Switch to Heatmap</button>
-    `;
+  const div = L.DomUtil.create("div", "toggle-button");
 
-    return div;
+  div.innerHTML = `<button id="toggleMap">Switch to Heatmap</button>`;
+
+  return div;
+};
+
+toggleButton.addTo(map);
+
+// -------------------------
+// TOGGLE LOGIC
+// -------------------------
+setTimeout(() => {
+
+  document.getElementById("toggleMap").onclick = function () {
+
+    if (!heatOn) {
+
+      map.removeLayer(markerLayer);
+      heatLayer.addTo(map);
+
+      this.innerText = "Switch to Markers";
+
+    } else {
+
+      map.removeLayer(heatLayer);
+      markerLayer.addTo(map);
+
+      this.innerText = "Switch to Heatmap";
+
+    }
+
+    heatOn = !heatOn;
   };
 
-  toggleButton.addTo(map);
+}, 0);
 
-  // must wait for DOM button to exist
-  setTimeout(() => {
-
-    document.getElementById("toggleMap").onclick = function () {
-
-      if (!heatOn) {
-
-        map.removeLayer(markerLayer);
-        heatLayer.addTo(map);
-
-        this.innerText = "Switch to Markers";
-
-      } else {
-
-        map.removeLayer(heatLayer);
-        markerLayer.addTo(map);
-
-        this.innerText = "Switch to Heatmap";
-
-      }
-
-      heatOn = !heatOn;
-    };
-
-  }, 0);
-
-  // -------------------------
-  // FIT BOUNDS
-  // -------------------------
-  if (markerLayer.getLayers().length > 0) {
+// -------------------------
+// FIT BOUNDS
+// -------------------------
+if (markerLayer.getLayers().length > 0) {
+  map.fitBounds(markerLayer.getBounds());
+}
     map.fitBounds(markerLayer.getBounds());
   }
 
