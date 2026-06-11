@@ -11,6 +11,8 @@
   rel="stylesheet"
   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
 />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.heat/dist/leaflet-heat.css">
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <style>
 
@@ -78,7 +80,7 @@ function getOpacity(age) {
   return 1 - ((age - 2) / 12);
 }
 
-const markers = L.geoJSON(data, {
+const markerLayer = L.geoJSON(data, {
 
   pointToLayer: function (feature, latlng) {
 
@@ -113,10 +115,33 @@ const markers = L.geoJSON(data, {
       opacity: opacity
 
     });
+  const heatData = data.features.map(f => {
+
+  const age = getAgeDays(f.properties.timestamp);
+
+  // weight: newer = stronger heat
+  const weight =
+    age <= 2 ? 1 :
+    age >= 14 ? 0.1 :
+    1 - (age / 14);
+
+  return [
+    f.geometry.coordinates[1], // lat
+    f.geometry.coordinates[0], // lng
+    weight
+  ];
+});
+
+const heatLayer = L.heatLayer(heatData, {
+  radius: 25,
+  blur: 18,
+  maxZoom: 17
+});
   },
 
   onEachFeature: function (feature, layer) {
-
+  markerLayer.addTo(map);
+let currentLayer = markerLayer;
     const age = Math.floor(getAgeDays(feature.properties.timestamp));
 
     layer.bindPopup(
@@ -130,7 +155,7 @@ const markers = L.geoJSON(data, {
 }).addTo(map);
 
   if (
-    markers.getLayers().length > 0
+    markerLayer.getLayers().length > 0
   ) {
 
     map.fitBounds(
@@ -148,7 +173,44 @@ const markers = L.geoJSON(data, {
   );
 
 });
+const toggleButton = L.control({ position: "topright" });
 
+toggleButton.onAdd = function () {
+
+  const div = L.DomUtil.create("div", "toggle-button");
+
+  div.innerHTML = `
+    <button id="toggleMap">
+      Switch to Heatmap
+    </button>
+  `;
+
+  return div;
+};
+
+toggleButton.addTo(map);
+  let heatOn = false;
+
+document.getElementById("toggleMap").onclick = function () {
+
+  if (!heatOn) {
+
+    map.removeLayer(markerLayer);
+    heatLayer.addTo(map);
+
+    this.innerText = "Switch to Markers";
+
+  } else {
+
+    map.removeLayer(heatLayer);
+    markerLayer.addTo(map);
+
+    this.innerText = "Switch to Heatmap";
+
+  }
+
+  heatOn = !heatOn;
+};
 </script>
 
 </body>
