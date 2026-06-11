@@ -84,7 +84,9 @@ const markers = L.geoJSON(data, {
     const age = getAgeDays(feature.properties.timestamp);
 
     // 🚫 kill old points completely
-    if (age >= 14) return null;
+    if (age >= 14) {
+      opacity = 0
+    };
 
     const isCluster = feature.properties.isCluster;
 
@@ -133,7 +135,6 @@ const markers = L.geoJSON(data, {
 
 }).addTo(map);
 
-  markers.addTo(map);
 
   if (
     markers.getLayers().length > 0
