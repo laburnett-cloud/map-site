@@ -83,24 +83,18 @@ const markers = L.geoJSON(data, {
 
     const age = getAgeDays(feature.properties.timestamp);
 
-    // 🚫 kill old points completely
-    if (age >= 14) {
-      opacity = 0
-    };
-
     const isCluster = feature.properties.isCluster;
 
     const hasDesc =
       feature.properties.description &&
       feature.properties.description.trim() !== "";
 
-    // 🎨 COLOR RULES
-    let color;
+    let color = "red";
 
     if (isCluster) {
       color = "green";
-    } else {
-      color = hasDesc ? "green" : "red";
+    } else if (hasDesc) {
+      color = "green";
     }
 
     const opacity = getOpacity(age);
@@ -124,17 +118,15 @@ const markers = L.geoJSON(data, {
 
     const age = Math.floor(getAgeDays(feature.properties.timestamp));
 
-    const popup =
+    layer.bindPopup(
       "<b>" + feature.properties.title + "</b><br><br>" +
       feature.properties.address + "<br><br>" +
       feature.properties.description + "<br><br>" +
-      "<small>" + age + " days old</small>";
-
-    layer.bindPopup(popup);
+      "<small>" + age + " days old</small>"
+    );
   }
 
 }).addTo(map);
-
 
   if (
     markers.getLayers().length > 0
