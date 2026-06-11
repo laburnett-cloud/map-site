@@ -65,32 +65,73 @@ fetch(
   console.log(
   JSON.stringify(data, null, 2)
 );
- const markers = L.geoJSON(data, {
+function getAgeDays(timestamp) {
+  const now = new Date();
+  const t = new Date(timestamp);
+  return (now - t) / (1000 * 60 * 60 * 24);
+}
+
+function getOpacity(age) {
+  if (age <= 2) return 1;
+  if (age >= 14) return 0;
+  return 1 - ((age - 2) / 12);
+}
+
+const markers = L.geoJSON(data, {
+
   pointToLayer: function (feature, latlng) {
 
-    const hasDesc = feature.properties.hasDescription;
+    const age = getAgeDays(feature.properties.timestamp);
 
-    const color = hasDesc ? "green" : "red";
+    // 🚫 kill old points completely
+    if (age >= 14) return null;
+
+    const isCluster = feature.properties.isCluster;
+
+    const hasDesc =
+      feature.properties.description &&
+      feature.properties.description.trim() !== "";
+
+    // 🎨 COLOR RULES
+    let color;
+
+    if (isCluster) {
+      color = "green";
+    } else {
+      color = hasDesc ? "green" : "red";
+    }
+
+    const opacity = getOpacity(age);
 
     return L.circleMarker(latlng, {
-      radius: 6,
+
+      radius: isCluster ? 9 : 6,
+
       fillColor: color,
       color: color,
+
       weight: 1,
-      fillOpacity: 0.9
+
+      fillOpacity: opacity,
+      opacity: opacity
+
     });
   },
 
   onEachFeature: function (feature, layer) {
 
+    const age = Math.floor(getAgeDays(feature.properties.timestamp));
+
     const popup =
       "<b>" + feature.properties.title + "</b><br><br>" +
       feature.properties.address + "<br><br>" +
-      feature.properties.description;
+      feature.properties.description + "<br><br>" +
+      "<small>" + age + " days old</small>";
 
     layer.bindPopup(popup);
   }
-});
+
+}).addTo(map);
 
   markers.addTo(map);
 
