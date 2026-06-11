@@ -42,9 +42,13 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5oItxf7TwSC81r-m_c3WwpAhkVMkXFmMhq4Sg/exec?t=" + Date.now())
-.then(res => res.json())
-.then(data => {
-
+  .then(res => {
+    console.log("STATUS:", res.status);
+    return res.text();
+  })
+  .then(text => {
+    console.log("RAW RESPONSE:", text);
+  });
   console.log("DATA:", data);
 
   // -------------------------
