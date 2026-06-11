@@ -41,13 +41,9 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5oItxf7TwSC81r-m_c3WwpAhkVMkXFmMhq4Sg/exec?t=" + Date.now())
-  .then(res => {
-    console.log("STATUS:", res.status);
-    return res.text();
-  })
-  .then(text => {
-    console.log("RAW RESPONSE:", text);
-  });
+.then(res => res.json())
+.then(data => {
+
   console.log("DATA:", data);
 
   // -------------------------
@@ -66,7 +62,7 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
   }
 
   // -------------------------
-  // MARKERS LAYER
+  // MARKERS
   // -------------------------
   const markerLayer = L.geoJSON(data, {
 
@@ -79,25 +75,16 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
         feature.properties.description &&
         feature.properties.description.trim() !== "";
 
-      let color = "red";
-
-      if (isCluster || hasDesc) {
-        color = "green";
-      }
-
-      const opacity = getOpacity(age);
+      let color = (isCluster || hasDesc) ? "green" : "red";
 
       return L.circleMarker(latlng, {
 
         radius: isCluster ? 9 : 6,
-
         fillColor: color,
         color: color,
-
         weight: 1,
-
-        fillOpacity: opacity,
-        opacity: opacity
+        fillOpacity: getOpacity(age),
+        opacity: getOpacity(age)
       });
     },
 
@@ -116,113 +103,72 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
   }).addTo(map);
 
   // -------------------------
-  // HEATMAP LAYER
+  // HEATMAP
   // -------------------------
-console.log("HEAT FEATURES:", data.features.length);
-console.log(
-  "SAMPLE HEAT INPUT:",
-  data.features.slice(0, 3).map(f => f.geometry)
-);
+  const heatData = data.features
+    .map(f => {
 
-// -------------------------
-// HEATMAP DATA
-// -------------------------
-const heatData = data.features
-  .map(f => {
+      const coords = f.geometry?.coordinates;
+      if (!coords) return null;
 
-    const coords = f.geometry?.coordinates;
-    if (!coords) return null;
+      const lat = coords[1];
+      const lng = coords[0];
 
-    const lat = coords[1];
-    const lng = coords[0];
+      const age = getAgeDays(f.properties.timestamp);
+      if (isNaN(age)) return null;
 
-    if (!isFinite(lat) || !isFinite(lng)) return null;
+      let weight = (age <= 2) ? 1 : (age >= 14 ? 0.1 : 1 - (age / 14));
 
-    const age = getAgeDays(f.properties.timestamp);
+      return [lat, lng, weight];
+    })
+    .filter(p => p !== null);
 
-    if (isNaN(age)) return null;
+  const heatLayer = L.heatLayer(heatData, {
+    radius: 25,
+    blur: 18,
+    maxZoom: 17
+  });
 
-    let weight = 1;
+  // -------------------------
+  // TOGGLE
+  // -------------------------
+  let heatOn = false;
 
-    if (age <= 2) weight = 1;
-    else if (age >= 14) weight = 0.1;
-    else weight = 1 - (age / 14);
+  const toggleButton = L.control({ position: "topright" });
 
-    return [lat, lng, weight];
-  })
-  .filter(p => p !== null);
-
-// -------------------------
-// HEAT LAYER
-// -------------------------
-const heatLayer = L.heatLayer(heatData, {
-  radius: 25,
-  blur: 18,
-  maxZoom: 17
-});
-
-// -------------------------
-// TOGGLE STATE
-// -------------------------
-let heatOn = false;
-
-// -------------------------
-// BUTTON
-// -------------------------
-const toggleButton = L.control({ position: "topright" });
-
-toggleButton.onAdd = function () {
-
-  const div = L.DomUtil.create("div", "toggle-button");
-
-  div.innerHTML = `<button id="toggleMap">Switch to Heatmap</button>`;
-
-  return div;
-};
-
-toggleButton.addTo(map);
-
-// -------------------------
-// TOGGLE LOGIC
-// -------------------------
-setTimeout(() => {
-
-  document.getElementById("toggleMap").onclick = function () {
-
-    if (!heatOn) {
-
-      map.removeLayer(markerLayer);
-      heatLayer.addTo(map);
-
-      this.innerText = "Switch to Markers";
-
-    } else {
-
-      map.removeLayer(heatLayer);
-      markerLayer.addTo(map);
-
-      this.innerText = "Switch to Heatmap";
-
-    }
-
-    heatOn = !heatOn;
+  toggleButton.onAdd = function () {
+    const div = L.DomUtil.create("div", "toggle-button");
+    div.innerHTML = `<button id="toggleMap">Switch to Heatmap</button>`;
+    return div;
   };
 
-}, 0);
+  toggleButton.addTo(map);
 
-// -------------------------
-// FIT BOUNDS
-// -------------------------
-if (markerLayer.getLayers().length > 0) {
-  map.fitBounds(markerLayer.getBounds());
-}
+  setTimeout(() => {
+
+    document.getElementById("toggleMap").onclick = function () {
+
+      if (!heatOn) {
+        map.removeLayer(markerLayer);
+        heatLayer.addTo(map);
+        this.innerText = "Switch to Markers";
+      } else {
+        map.removeLayer(heatLayer);
+        markerLayer.addTo(map);
+        this.innerText = "Switch to Heatmap";
+      }
+
+      heatOn = !heatOn;
+    };
+
+  }, 0);
+
+  // -------------------------
+  // FIT BOUNDS
+  // -------------------------
+  if (markerLayer.getLayers().length > 0) {
     map.fitBounds(markerLayer.getBounds());
   }
 
 })
 .catch(err => console.error(err));
-
-</script>
-
-</body>
-</html>
