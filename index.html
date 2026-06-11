@@ -6,7 +6,7 @@
 <title>ICE Sighting Map</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-  
+
 <style>
 html, body, #map {
   height: 100%;
@@ -40,26 +40,23 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   maxZoom: 19
 }).addTo(map);
 
+function getAgeDays(timestamp) {
+  const now = new Date();
+  const t = new Date(timestamp);
+  return (now - t) / (1000 * 60 * 60 * 24);
+}
+
+function getOpacity(age) {
+  if (age <= 2) return 1;
+  if (age >= 14) return 0;
+  return 1 - ((age - 2) / 12);
+}
+
 fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5oItxf7TwSC81r-m_c3WwpAhkVMkXFmMhq4Sg/exec?t=" + Date.now())
 .then(res => res.json())
 .then(data => {
 
-  console.log("DATA:", data);
-
-  // -------------------------
-  // TIME FUNCTIONS
-  // -------------------------
-  function getAgeDays(timestamp) {
-    const now = new Date();
-    const t = new Date(timestamp);
-    return (now - t) / (1000 * 60 * 60 * 24);
-  }
-
-  function getOpacity(age) {
-    if (age <= 2) return 1;
-    if (age >= 14) return 0;
-    return 1 - ((age - 2) / 12);
-  }
+  console.log("DATA LOADED:", data);
 
   // -------------------------
   // MARKERS
@@ -75,7 +72,7 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
         feature.properties.description &&
         feature.properties.description.trim() !== "";
 
-      let color = (isCluster || hasDesc) ? "green" : "red";
+      const color = (isCluster || hasDesc) ? "green" : "red";
 
       return L.circleMarker(latlng, {
 
@@ -103,25 +100,28 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
   }).addTo(map);
 
   // -------------------------
-  // HEATMAP
+  // HEATMAP DATA
   // -------------------------
   const heatData = data.features
     .map(f => {
 
-      const coords = f.geometry?.coordinates;
-      if (!coords) return null;
+      if (!f.geometry || !f.geometry.coordinates) return null;
 
-      const lat = coords[1];
-      const lng = coords[0];
+      const lat = f.geometry.coordinates[1];
+      const lng = f.geometry.coordinates[0];
 
       const age = getAgeDays(f.properties.timestamp);
       if (isNaN(age)) return null;
 
-      let weight = (age <= 2) ? 1 : (age >= 14 ? 0.1 : 1 - (age / 14));
+      let weight = 1;
+
+      if (age <= 2) weight = 1;
+      else if (age >= 14) weight = 0.1;
+      else weight = 1 - (age / 14);
 
       return [lat, lng, weight];
     })
-    .filter(p => p !== null);
+    .filter(Boolean);
 
   const heatLayer = L.heatLayer(heatData, {
     radius: 25,
@@ -130,7 +130,7 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
   });
 
   // -------------------------
-  // TOGGLE
+  // TOGGLE BUTTON
   // -------------------------
   let heatOn = false;
 
@@ -138,7 +138,7 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
 
   toggleButton.onAdd = function () {
     const div = L.DomUtil.create("div", "toggle-button");
-    div.innerHTML = `<button id="toggleMap">Switch to Heatmap</button>`;
+    div.innerHTML = "<button id='toggleMap'>Switch to Heatmap</button>";
     return div;
   };
 
@@ -171,4 +171,9 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
   }
 
 })
-.catch(err => console.error(err));
+.catch(err => console.error("FETCH ERROR:", err));
+
+</script>
+
+</body>
+</html>
