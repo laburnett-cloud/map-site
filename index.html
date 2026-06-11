@@ -76,7 +76,7 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
 
       return L.circleMarker(latlng, {
 
-        radius: isCluster ? 9 : 6,
+        radius: isCluster ? 14 : 10,
         fillColor: color,
         color: color,
         weight: 1,
@@ -120,7 +120,7 @@ fetch("https://script.google.com/macros/s/AKfycbwYPhyRkv6vJwgSkM3iawt9mlBuj7mmH5
       else weight = 1 - (age / 14);
 
       //test
-      return [lat, lng, 1];
+      return [lat, lng, weight];
     })
     .filter(Boolean);
 
